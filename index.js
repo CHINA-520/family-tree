@@ -71,16 +71,16 @@ export default {
         </header>
 
         <div id="view-list" class="container"></div>
-        <div id="view-tree" class="container" style="display:none;"><div id="tree-box" style="background:#fff; padding:25px; border-radius:12px;"></div></div>
+        <div id="view-tree" class="container" style="display:none;"><div id="tree-box" style="background:#fff; padding:25px; border-radius:12px; overflow-x:auto;"></div></div>
         <div id="view-table" class="container" style="display:none;">
            <div style="background:#fff; border-radius:12px; overflow-x:auto;"><table style="width:100%; border-collapse:collapse; min-width:800px;"><thead><tr style="background:#f8f8f8;"><th style="padding:12px;">代别</th><th>姓名</th><th>生卒年</th><th>排行</th><th>配偶</th><th>居住地</th></tr></thead><tbody id="table-body" style="text-align:center;"></tbody></table></div>
         </div>
         <div id="view-map" class="container" style="display:none;"><div id="map-box" style="width:100%; height:75vh; background:#fff; border-radius:12px;"><svg id="svg" style="width:100%; height:100%;"></svg></div></div>
-        <div id="view-export" class="container" style="display:none;"><div class="export-box" style="text-align:center; padding:50px; background:#fff; border-radius:15px;"><h3>📂 数据备份</h3><button class="btn-export" onclick="exportToExcel()">导出 Excel (.csv)</button><button class="btn-export" onclick="exportToJSON()">导出备份 (.json)</button></div></div>
+        <div id="view-export" class="container" style="display:none;"><div class="export-box" style="text-align:center; padding:50px; background:#fff; border-radius:15px;"><h3>📂 数据备份</h3><button class="btn-export" onclick="exportToExcel()" style="margin:10px; padding:10px 20px; cursor:pointer;">导出 Excel (.csv)</button><button class="btn-export" onclick="exportToJSON()" style="margin:10px; padding:10px 20px; cursor:pointer;">导出备份 (.json)</button></div></div>
 
         <div class="stats-bar"><div style="font-weight:bold; color:var(--m-red); border-left:4px solid var(--m-red); padding-left:10px;">家族统计</div><div id="stats-content" class="stats-grid"></div></div>
         <footer class="footer"><div>万代昌盛 · 莫氏宗亲会</div></footer>
-        <button style="position:fixed; bottom:30px; right:30px; width:60px; height:60px; background:var(--m-red); color:#fff; border-radius:50%; border:none; font-size:32px; box-shadow:0 4px 15px rgba(0,0,0,0.2);" onclick="addNew()">+</button>
+        <button style="position:fixed; bottom:30px; right:30px; width:60px; height:60px; background:var(--m-red); color:#fff; border-radius:50%; border:none; font-size:32px; box-shadow:0 4px 15px rgba(0,0,0,0.2); cursor:pointer;" onclick="addNew()">+</button>
 
         <div id="panel">
           <h3 style="border-left:4px solid var(--m-red); padding-left:10px;">编辑成员</h3>
@@ -95,9 +95,12 @@ export default {
           <div style="margin-bottom:12px;"><label>居住地</label><input id="in-loc"></div>
           <div style="margin-bottom:12px;"><label>个人简介</label><textarea id="in-bio" rows="3"></textarea></div>
           <button class="btn-save" onclick="doSave()">💾 保存更新</button>
-          <button style="width:100%; margin-top:10px; padding:12px; border:1px solid #ddd; background:#f9f9f9; border-radius:8px;" onclick="addSon()">➕ 录入后代</button>
-          <button style="width:100%; margin-top:20px; color:red; background:none; border:none;" onclick="doDel()">❌ 删除</button>
-          <button style="width:100%; margin-top:10px; color:#999; background:none; border:none;" onclick="closePanel()">取消</button>
+          <button style="width:100%; margin-top:10px; padding:12px; border:1px solid #ddd; background:#f9f9f9; border-radius:8px; cursor:pointer;" onclick="addSon()">➕ 录入后代</button>
+          <div style="margin-top:20px; text-align:center;">
+            <button style="color:red; background:none; border:none; cursor:pointer;" onclick="doDel()">❌ 删除档案</button>
+            <span style="color:#eee; margin:0 10px;">|</span>
+            <button style="color:#999; background:none; border:none; cursor:pointer;" onclick="closePanel()">取消返回</button>
+          </div>
         </div>
       </div>
 
@@ -152,9 +155,9 @@ export default {
           const roots = data.filter(m => !m.pid || !data.find(f => f.id === m.pid));
           function build(n) {
             const d = document.createElement('div'); d.style.marginLeft='30px'; d.style.borderLeft='1px dashed #ccc'; d.style.paddingLeft='15px';
-            d.innerHTML = \`<div onclick="openPanel('\${n.id}')" style="cursor:pointer; padding:6px 0;">
-                <strong>\${n.name}</strong> <small style="color:#999;">(\${n.birth||''}-\${n.death||''})</small> 
-                <span style="color:var(--m-orange); margin-left:10px;">[配：\${n.spouse || '无'}]</span>
+            d.innerHTML = \`<div onclick="openPanel('\${n.id}')" style="cursor:pointer; padding:8px 0;">
+                <strong style="font-size:16px;">\${n.name}</strong> <small style="color:#999; margin-left:5px;">(\${n.birth||''}-\${n.death||''})</small> 
+                <span style="color:var(--m-orange); margin-left:15px; font-size:13px;">[配偶：\${n.spouse || '无'}]</span>
               </div>\`;
             data.filter(f => f.pid === n.id).forEach(c => d.appendChild(build(c)));
             return d;
@@ -167,12 +170,17 @@ export default {
           svg.call(d3.zoom().on("zoom", (e) => g.attr("transform", e.transform)));
           const dict = {}; data.forEach(d => dict[d.id] = {...d, children:[]});
           const roots = []; data.forEach(d => { if(dict[d.pid]) dict[d.pid].children.push(dict[d.id]); else roots.push(dict[d.id]); });
-          const root = d3.hierarchy({name:"莫", children: roots});
+          const root = d3.hierarchy({name:"莫氏家族", children: roots});
           d3.tree().nodeSize([220, 240])(root);
-          g.selectAll("path").data(root.links().filter(d=>d.source.depth>0)).enter().append("path").attr("fill","none").attr("stroke","#ccc").attr("d", d3.linkVertical().x(d=>d.x).y(d=>d.y));
-          const n = g.selectAll("g.node").data(root.descendants().filter(d=>d.depth>0)).enter().append("g").attr("transform", d => \`translate(\${d.x-90},\${d.y-55})\`).on("click",(e,d)=>openPanel(d.data.id));
+          
+          g.selectAll("path").data(root.links().filter(d=>d.source.depth>0)).enter().append("path")
+            .attr("fill","none").attr("stroke","#ccc").attr("d", d3.linkVertical().x(d=>d.x).y(d=>d.y));
+
+          const n = g.selectAll("g.node").data(root.descendants().filter(d=>d.depth>0)).enter().append("g")
+            .attr("transform", d => \`translate(\${d.x-90},\${d.y-55})\`).on("click",(e,d)=>openPanel(d.data.id));
+            
           n.append("foreignObject").attr("width",180).attr("height",110).html(d => \`
-            <div style="background:#fff; border:1px solid #ddd; border-top:4px solid var(--m-red); padding:10px; font-size:12px; border-radius:8px; text-align:center;">
+            <div style="background:#fff; border:1px solid #ddd; border-top:4px solid var(--m-red); padding:10px; font-size:12px; border-radius:8px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.05); cursor:pointer;">
               <b style="font-size:15px; display:block; margin-bottom:3px;">\${d.data.name}</b>
               <div style="color:#999; font-size:10px; margin-bottom:5px;">\${d.data.birth||''}-\${d.data.death||''}</div>
               <div style="color:var(--m-orange); font-weight:bold; border-top:1px solid #f0f0f0; padding-top:4px;">配偶：\${d.data.spouse || '无'}</div>
@@ -181,46 +189,48 @@ export default {
 
         function openPanel(id) {
           window.cur = id; const m = data.find(f => f.id === id);
+          if(!m) return;
           document.getElementById('panel').classList.add('active');
           ['name','gen','loc','bio','spouse','order','birth','death'].forEach(k => { document.getElementById('in-' + k).value = m[k] || ''; });
         }
         function closePanel() { document.getElementById('panel').classList.remove('active'); }
 
         async function apiPost(newData) {
-          const auth = prompt("请输入编辑密码 (888)"); if(!auth) return;
+          const auth = prompt("请输入管理校验码："); if(!auth) return;
           const res = await fetch('', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ auth: auth, data: newData }) });
-          if(res.ok) location.reload(); else alert('保存失败');
+          if(res.ok) location.reload(); else alert('校验未通过或保存失败');
         }
 
         function doSave() {
           const m = data.find(f => f.id === window.cur);
+          if(!m) return;
           ['name','gen','loc','bio','spouse','order','birth','death'].forEach(k => { m[k] = document.getElementById('in-' + k).value; });
           apiPost(data);
         }
-        function addNew() { const n = prompt("姓名"); if(n){ data.push({id:"id"+Date.now(), name:n, gen:"第1代"}); apiPost(data); } }
+        function addNew() { const n = prompt("请输入始祖姓名："); if(n){ data.push({id:"id"+Date.now(), name:n, gen:"第1代"}); apiPost(data); } }
         function addSon() {
-          const n = prompt("后代姓名"); if(n){
+          const n = prompt("请输入后代姓名："); if(n){
             const p = data.find(f => f.id === window.cur);
             data.push({id:"id"+Date.now(), name:n, gen:"第"+((parseInt(p.gen.match(/\\d+/))||0)+1)+"代", pid:p.id});
             apiPost(data);
           }
         }
-        function doDel() { if(confirm("确定删除？")){ data=data.filter(f=>f.id!==window.cur); apiPost(data); } }
+        function doDel() { if(confirm("确定要永久移除该成员档案吗？")){ data=data.filter(f=>f.id!==window.cur); apiPost(data); } }
         function renderStats() {
           const box = document.getElementById('stats-content');
           const genMap = {}; data.forEach(m => { const g = m.gen || '待定'; genMap[g] = (genMap[g] || 0) + 1; });
-          let html = \`<div class="stat-item"><span class="stat-num">\${data.length}</span><span class="stat-lbl">总人数</span></div>\`;
+          let html = \`<div class="stat-item"><span class="stat-num">\${data.length}</span><span style="font-size:11px; color:#999;">族谱总人数</span></div>\`;
           Object.keys(genMap).sort((a,b)=>parseInt(a.match(/\\d+/))-parseInt(b.match(/\\d+/))).forEach(g => {
-            html += \`<div class="stat-item"><span class="stat-num">\${genMap[g]}</span><span class="stat-lbl">\${g}</span></div>\`;
+            html += \`<div class="stat-item"><span class="stat-num">\${genMap[g]}</span><span style="font-size:11px; color:#999;">\${g}</span></div>\`;
           });
           box.innerHTML = html;
         }
         function exportToExcel() {
-          let csv = "\\ufeff代别,姓名,出生,卒年,配偶,排行\\n";
+          let csv = "\\ufeff代别,姓名,出生年份,卒年/享年,配偶,排行\\n";
           data.forEach(m => { csv += \`"\${m.gen}","\${m.name}","\${m.birth||''}","\${m.death||''}","\${m.spouse||''}","\${m.order||''}"\\n\`; });
-          downloadFile(csv, '莫氏族谱.csv', 'text/csv;charset=utf-8;');
+          downloadFile(csv, '莫氏族谱档案.csv', 'text/csv;charset=utf-8;');
         }
-        function exportToJSON() { downloadFile(JSON.stringify(data, null, 2), '莫氏备份.json', 'application/json'); }
+        function exportToJSON() { downloadFile(JSON.stringify(data, null, 2), '莫氏族谱数据备份.json', 'application/json'); }
         function downloadFile(content, fileName, mimeType) {
           const blob = new Blob([content], { type: mimeType });
           const url = URL.createObjectURL(blob);
